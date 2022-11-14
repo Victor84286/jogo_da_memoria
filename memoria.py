@@ -16,10 +16,12 @@ class Cores:
 
     Cada cor é uma tupla de três elementos, no padrão RGB.
     """
-    branco = (255, 255, 255)
+    branco = (54, 108, 173)
     preto = (0, 0, 0)
-    azul = (0, 0, 255)
-
+    azul = (18, 18, 179)
+    ciano = (54, 169, 173)
+    azul_claro = (103, 244, 250)
+    marrom = (250, 160, 102)
 
 @dataclass
 class Bordas:
@@ -33,6 +35,7 @@ class Carta:
     virada = False
     largura = 40
     altura = 80
+    combinada = False
 
     margem = 50
     espaco_entre_cartas = 20
@@ -40,6 +43,7 @@ class Carta:
     def __init__(self, valor, indice):
         self.valor = valor
         self.posx, self.posy = self.define_coordenadas(indice)
+        self.indice = indice
 
     def define_coordenadas(self, indice, cartas_por_linha = 5):
         """
@@ -48,8 +52,8 @@ class Carta:
         """
         linha = indice // cartas_por_linha
         coluna = indice % cartas_por_linha
-        pos_y = self.margem + linha * (self.altura + self.espaco_entre_cartas)
-        pos_x = self.margem + coluna * (self.largura + self.espaco_entre_cartas)
+        pos_y = linha * (self.altura + self.espaco_entre_cartas)
+        pos_x = coluna * (self.largura + self.espaco_entre_cartas)
 
         return pos_x, pos_y
 
@@ -57,7 +61,7 @@ class Carta:
         """
         Vira uma carta, ou seja, muda o valor lógico da variável self.virada.
         """
-        pass
+        self.virada = True
 
     def foi_clicada(self, coord):
         """
@@ -70,8 +74,11 @@ class Carta:
         Retorna: bool -> um sinal de que o clique do mouse ocorreu dentro
             da área definida pela carta.
         """
-        if self.posx <= coord <= self.posx + self.largura:
-            if self.posy <= coord <= self.posy + self.altura:
+        vertice_direito = self.margem + self.posx + self.largura
+        vertice_inferior = self.margem + self.posy + self.altura
+
+        if self.margem + self.posx <= coord[0] <= vertice_direito:
+            if self.margem + self.posy <= coord[1] <= vertice_inferior:
                 return True
 
         return False
@@ -90,10 +97,10 @@ class Desenha:
         largura -> Largura da borda.
         altura -> Altura da borda.
         """
-        pygame.draw.rect(tela, Cores.branco, [0, 0] + [largura, Bordas.espessura]) # borda superior
-        pygame.draw.rect(tela, Cores.branco, [0, 0] + [Bordas.espessura, altura]) # borda esquerda
-        pygame.draw.rect(tela, Cores.branco, [0, altura - Bordas.espessura] + [largura, altura]) # borda inferior
-        pygame.draw.rect(tela, Cores.branco, [largura - Bordas.espessura, 0] + [largura, altura]) # borda direita
+        pygame.draw.rect(tela, Cores.marrom, [0, 0] + [largura, Bordas.espessura]) # borda superior
+        pygame.draw.rect(tela, Cores.marrom, [0, 0] + [Bordas.espessura, altura]) # borda esquerda
+        pygame.draw.rect(tela, Cores.marrom, [0, altura - Bordas.espessura] + [largura, altura]) # borda inferior
+        pygame.draw.rect(tela, Cores.marrom, [largura - Bordas.espessura, 0] + [largura, altura]) # borda direita
 
 
     def cartas(self, tela, cartas):
@@ -116,9 +123,10 @@ class Desenha:
 
         Retorna: None
         """
-        pygame.draw.rect(tela, Cores.branco, [carta.posx, carta.posy])
-
-
+        pygame.draw.rect(tela, Cores.branco, [carta.margem + carta.posx, carta.margem + carta.posy] + [carta.largura, carta.altura])
+        fonte = pygame.font.SysFont(None, 70)
+        carta_fonte = fonte.render(str(carta.valor), True, Cores.preto)
+        tela.blit(carta_fonte, (carta.margem + carta.posx + 8, carta.margem + carta.posy + 20))
 
     @staticmethod
     def carta_oculta(tela, carta):
@@ -132,8 +140,7 @@ class Desenha:
 
         Retorna: None
         """
-
-        pygame.draw.rect(tela, Cores.azul, [carta.posx, carta.posy] + [carta.posx + carta.largura, carta.posy + carta.altura])
+        pygame.draw.rect(tela, Cores.azul, [carta.margem + carta.posx, carta.margem + carta.posy] + [carta.largura, carta.altura])
 
 
 
@@ -151,7 +158,7 @@ class Tela:
 
     def renderiza(self):
         """Renderiza a tela do jogo."""
-        self.tela.fill(Cores.preto)
+        self.tela.fill(Cores.azul_claro)
 
         Desenha.bordas(self.tela, self.largura, self.altura)
         Desenha().cartas(self.tela, self.cartas)
@@ -209,7 +216,26 @@ def ocultar_cartas_se_necessario(cartas):
     Parâmetros:
     cartas -> Uma lista com objetos da classe Carta
     """
+    indices = []
+    cartas_viradas = 0
 
+    for carta in cartas:
+        if carta.combinada == False:
+            if carta.virada:
+                cartas_viradas += 1
+                indices.append(carta.indice)
+
+
+    if cartas_viradas == 2:
+        if cartas[indices[0]].valor == cartas[indices[1]].valor:
+            cartas[indices[0]].combinada = True
+            cartas[indices[1]].combinada = True
+            cartas_viradas = 0
+            indices = []
+        for carta in cartas:
+            if carta.combinada == False:
+                carta.virada = False
+        time.sleep(0.5)
 
 
 def inicio_jogo():
@@ -241,6 +267,4 @@ def jogo():
     roda_loop(inicio_jogo())
     encerra_jogo()
 
-
-if __name__ == "__main__":
-    jogo()
+jogo()
