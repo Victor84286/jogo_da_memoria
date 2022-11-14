@@ -1,5 +1,11 @@
 """
 Jogo da memória.
+
+feito por:
+Victor Hugo Rocha
+Matheus Herzog
+Gabriel Espósito
+Pedro Reis
 """
 import time
 import random
